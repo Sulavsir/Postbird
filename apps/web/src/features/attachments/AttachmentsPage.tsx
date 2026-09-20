@@ -10,11 +10,14 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 export function AttachmentsPage() {
   const attachments = useAttachments();
   const upload = useUploadAttachment();
   const remove = useDeleteAttachment();
+  const { confirm, modal } = useConfirmDialog();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
@@ -76,9 +79,14 @@ export function AttachmentsPage() {
                   className="text-destructive"
                   type="button"
                   onClick={() => {
-                    if (window.confirm(`Delete ${file.originalName}?`)) {
-                      remove.mutate(file.id);
-                    }
+                    void (async () => {
+                      const confirmed = await confirm({
+                        title: "Delete attachment",
+                        description: `Delete ${file.originalName}? This removes the file from your library.`,
+                        confirmLabel: "Delete file",
+                      });
+                      if (confirmed) remove.mutate(file.id);
+                    })();
                   }}
                 >
                   Delete
@@ -94,6 +102,7 @@ export function AttachmentsPage() {
           )}
         </CardContent>
       </Card>
+      <ConfirmModal {...modal} />
     </div>
   );
 }

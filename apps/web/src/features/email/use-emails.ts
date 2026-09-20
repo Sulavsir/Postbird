@@ -20,6 +20,17 @@ export function useEmail(id: string | undefined) {
   });
 }
 
+export function useDeleteEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => emailService.remove(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: EMAILS_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+    },
+  });
+}
+
 export function useSendEmail() {
   const queryClient = useQueryClient();
   return useMutation({

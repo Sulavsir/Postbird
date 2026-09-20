@@ -1,6 +1,10 @@
 import type { RequestHandler } from "express";
 import type { ImapSyncInput } from "@postbird/shared";
-import { listReceived, syncReceived } from "./received.service.js";
+import {
+  deleteReceived,
+  listReceived,
+  syncReceived,
+} from "./received.service.js";
 
 export const listReceivedHandler: RequestHandler = async (
   request,
@@ -9,6 +13,22 @@ export const listReceivedHandler: RequestHandler = async (
 ) => {
   try {
     const data = await listReceived(request.userId!);
+    response.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteReceivedHandler: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
+  try {
+    const data = await deleteReceived(
+      request.userId!,
+      String(request.params.id),
+    );
     response.json({ success: true, data });
   } catch (error) {
     next(error);

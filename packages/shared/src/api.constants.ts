@@ -28,6 +28,7 @@ export const API_PATHS = {
   received: {
     root: "/received",
     sync: "/received/sync",
+    byId: (id: string) => `/received/${id}`,
   },
   dashboard: "/dashboard",
 } as const;

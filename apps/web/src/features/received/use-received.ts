@@ -12,6 +12,17 @@ export function useReceivedEmails() {
   });
 }
 
+export function useDeleteReceivedEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => receivedService.remove(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: RECEIVED_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+    },
+  });
+}
+
 export function useSyncInbox() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -8,6 +8,7 @@ import {
 import { encrypt } from "../src/utils/encryption.js";
 
 const prisma = new PrismaClient();
+const SEED_SMTP_ID = "00000000-0000-0000-0000-000000000001";
 
 async function main() {
   const passwordHash = await bcrypt.hash("change-me-before-use", 12);
@@ -21,8 +22,23 @@ async function main() {
     },
   });
 
+  const seedSmtp = process.env.SEED_SMTP === "true";
   const smtpUser = process.env.SMTP_USER?.trim();
   const smtpPassword = process.env.SMTP_PASSWORD?.trim();
+
+  if (!seedSmtp || !smtpUser || !smtpPassword) {
+    await prisma.email.deleteMany({
+      where: { smtpConfigurationId: SEED_SMTP_ID },
+    });
+    await prisma.smtpConfiguration.deleteMany({
+      where: { id: SEED_SMTP_ID },
+    });
+    console.log(
+      `Seeded demo user ${user.email} with no SMTP. Add a connection in the UI, or set SEED_SMTP=true with SMTP_USER and SMTP_PASSWORD to seed one.`,
+    );
+    return;
+  }
+
   const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
   const smtpPort = Number(process.env.SMTP_PORT) || 587;
   const smtpSecurity = (process.env.SMTP_SECURITY?.trim() ||
@@ -35,57 +51,34 @@ async function main() {
         ? "MICROSOFT"
         : "CUSTOM";
 
-  if (smtpUser && smtpPassword) {
-    await prisma.smtpConfiguration.upsert({
-      where: { id: "00000000-0000-0000-0000-000000000001" },
-      update: {
-        userId: user.id,
-        provider,
-        label: `${provider}`,
-        host: smtpHost,
-        port: smtpPort,
-        security: smtpSecurity,
-        username: smtpUser,
-        encryptedSecret: encrypt(smtpPassword),
-        isEnabled: true,
-      },
-      create: {
-        id: "00000000-0000-0000-0000-000000000001",
-        userId: user.id,
-        provider,
-        label: `${provider}`,
-        host: smtpHost,
-        port: smtpPort,
-        security: smtpSecurity,
-        username: smtpUser,
-        encryptedSecret: encrypt(smtpPassword),
-        isEnabled: true,
-      },
-    });
-    console.log(
-      `Seeded demo user ${user.email} with enabled SMTP ${smtpHost}:${smtpPort} for ${smtpUser}.`,
-    );
-    return;
-  }
-
   await prisma.smtpConfiguration.upsert({
-    where: { id: "00000000-0000-0000-0000-000000000001" },
-    update: {},
-    create: {
-      id: "00000000-0000-0000-0000-000000000001",
+    where: { id: SEED_SMTP_ID },
+    update: {
       userId: user.id,
-      provider: "CUSTOM",
-      label: "Local SMTP placeholder",
-      host: "localhost",
-      port: 1025,
-      security: "NONE",
-      username: "demo@postbird.local",
-      encryptedSecret: "seed-placeholder",
-      isEnabled: false,
+      provider,
+      label: `${provider}`,
+      host: smtpHost,
+      port: smtpPort,
+      security: smtpSecurity,
+      username: smtpUser,
+      encryptedSecret: encrypt(smtpPassword),
+      isEnabled: true,
+    },
+    create: {
+      id: SEED_SMTP_ID,
+      userId: user.id,
+      provider,
+      label: `${provider}`,
+      host: smtpHost,
+      port: smtpPort,
+      security: smtpSecurity,
+      username: smtpUser,
+      encryptedSecret: encrypt(smtpPassword),
+      isEnabled: true,
     },
   });
   console.log(
-    `Seeded demo user ${user.email}. The placeholder SMTP configuration is disabled.`,
+    `Seeded demo user ${user.email} with SMTP ${smtpHost}:${smtpPort} for ${smtpUser} because SEED_SMTP=true.`,
   );
 }
 

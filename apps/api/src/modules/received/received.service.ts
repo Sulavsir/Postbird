@@ -1,6 +1,19 @@
 import type { ImapSyncInput } from "@postbird/shared";
 import { prisma } from "../../lib/prisma.js";
 import { ImapService } from "../../integrations/imap/imap.service.js";
+import { NotFoundError } from "../../utils/errors.js";
+
+export async function deleteReceived(userId: string, id: string) {
+  const existing = await prisma.receivedEmail.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+  if (!existing) {
+    throw new NotFoundError("Received email");
+  }
+  await prisma.receivedEmail.delete({ where: { id: existing.id } });
+  return { deleted: true, id: existing.id };
+}
 
 export async function listReceived(userId: string) {
   return prisma.receivedEmail.findMany({

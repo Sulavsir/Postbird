@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { APP_ROUTES } from "../../constants";
-import { useSendEmail } from "../../features/email";
+import { useDeleteEmail, useSendEmail } from "../../features/email";
+import { useDeleteReceivedEmail } from "../../features/received/use-received";
 import { useUploadAttachment } from "../../features/attachments";
 import type { DashboardData } from "../../features/dashboard/dashboard.service";
 import {
@@ -35,6 +36,8 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 import { cn } from "@/lib/utils";
 
 const providerLabels: Record<string, string> = {
@@ -61,7 +64,12 @@ function PanelHeading({
     <CardHeader className="flex flex-row items-start justify-between space-y-0">
       <div>
         <div className="flex items-center gap-2">
-          <span className={cn("grid size-7 place-items-center rounded-lg", iconClass)}>
+          <span
+            className={cn(
+              "grid size-7 place-items-center rounded-lg",
+              iconClass,
+            )}
+          >
             {icon}
           </span>
           <CardTitle className="text-base">{title}</CardTitle>
@@ -81,13 +89,12 @@ export function ComposePanel({
   const navigate = useNavigate();
   const send = useSendEmail();
   const enabled = configurations.filter((item) => item.isEnabled);
-  const [configurationId, setConfigurationId] = useState(enabled[0]?.id ?? "");
+  const [configurationId, setConfigurationId] = useState("");
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
-  const configuration =
-    enabled.find((item) => item.id === configurationId) ?? enabled[0];
+  const configuration = enabled.find((item) => item.id === configurationId);
 
   async function submit() {
     if (!configuration || !to.trim() || !subject.trim() || !body.trim()) return;
@@ -136,6 +143,7 @@ export function ComposePanel({
               value={configurationId}
               onChange={(event) => setConfigurationId(event.target.value)}
             >
+              <option value="">Select an SMTP account</option>
               {enabled.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.label} &lt;{item.username}&gt;
@@ -223,7 +231,8 @@ export function SmtpPanel({
               <span className="min-w-0">
                 <strong className="block truncate">{item.label}</strong>
                 <small className="block truncate text-muted-foreground">
-                  {providerLabels[item.provider] ?? item.provider} · {item.username}
+                  {providerLabels[item.provider] ?? item.provider} ·{" "}
+                  {item.username}
                 </small>
               </span>
               {item.isEnabled ? (
@@ -232,7 +241,9 @@ export function SmtpPanel({
             </div>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground">No SMTP configurations yet.</p>
+          <p className="text-sm text-muted-foreground">
+            No SMTP configurations yet.
+          </p>
         )}
       </CardContent>
     </Card>
@@ -278,6 +289,9 @@ export function ActivityPanel({
   sentEmails,
   receivedEmails,
 }: Pick<DashboardData, "sentEmails" | "receivedEmails">) {
+  const removeSent = useDeleteEmail();
+  const removeReceived = useDeleteReceivedEmail();
+  const { confirm, modal } = useConfirmDialog();
   return (
     <Card className="lg:row-span-2">
       <PanelHeading
@@ -304,25 +318,47 @@ export function ActivityPanel({
               sentEmails.map((item) => {
                 const name = item.recipients[0]?.address ?? "Unknown recipient";
                 return (
-                  <Link
+                  <div
                     className="flex items-center gap-2 border-b py-3 text-sm last:border-0"
                     key={item.id}
-                    to={APP_ROUTES.email(item.id)}
                   >
-                    <span className="grid size-7 place-items-center rounded-full bg-sky-400 text-[10px] font-bold text-white">
-                      {initials(name)}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <strong className="block truncate">{name}</strong>
-                      <small className="block truncate text-muted-foreground">
-                        {item.subject || "No subject"}
-                      </small>
-                    </span>
-                    <span className="text-right text-xs text-muted-foreground">
-                      {formatDate(item.sentAt ?? item.createdAt)}
-                      <small className="mt-1 block">{item.status}</small>
-                    </span>
-                  </Link>
+                    <Link
+                      className="flex min-w-0 flex-1 items-center gap-2"
+                      to={APP_ROUTES.email(item.id)}
+                    >
+                      <span className="grid size-7 place-items-center rounded-full bg-sky-400 text-[10px] font-bold text-white">
+                        {initials(name)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <strong className="block truncate">{name}</strong>
+                        <small className="block truncate text-muted-foreground">
+                          {item.subject || "No subject"}
+                        </small>
+                      </span>
+                      <span className="text-right text-xs text-muted-foreground">
+                        {formatDate(item.sentAt ?? item.createdAt)}
+                        <small className="mt-1 block">{item.status}</small>
+                      </span>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      type="button"
+                      onClick={() => {
+                        void (async () => {
+                          const confirmed = await confirm({
+                            title: "Delete email",
+                            description: `Delete “${item.subject}”? This removes it from Postbird history only.`,
+                            confirmLabel: "Delete email",
+                          });
+                          if (confirmed) removeSent.mutate(item.id);
+                        })();
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 );
               })
             ) : (
@@ -350,6 +386,25 @@ export function ActivityPanel({
                     <span className="text-xs text-muted-foreground">
                       {formatDate(item.receivedAt)}
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      type="button"
+                      onClick={() => {
+                        void (async () => {
+                          const confirmed = await confirm({
+                            title: "Delete received message",
+                            description:
+                              "Delete this message from Postbird? It stays in the mailbox on the mail server.",
+                            confirmLabel: "Delete message",
+                          });
+                          if (confirmed) removeReceived.mutate(item.id);
+                        })();
+                      }}
+                    >
+                      Delete
+                    </Button>
                   </div>
                 );
               })
@@ -358,6 +413,7 @@ export function ActivityPanel({
             )}
           </TabsContent>
         </Tabs>
+        <ConfirmModal {...modal} />
       </CardContent>
     </Card>
   );
@@ -412,12 +468,16 @@ export function AttachmentsPanel({
           <div className="flex min-h-20 flex-col items-center justify-center rounded-lg border border-dashed text-muted-foreground">
             <Upload size={18} className="mb-1 text-primary" />
             <strong className="text-sm">No attachments</strong>
-            <span className="text-xs">Upload a file here or when composing</span>
+            <span className="text-xs">
+              Upload a file here or when composing
+            </span>
           </div>
         )}
         {upload.isError ? (
           <Alert variant="destructive" className="mt-3">
-            {upload.error instanceof Error ? upload.error.message : "Upload failed"}
+            {upload.error instanceof Error
+              ? upload.error.message
+              : "Upload failed"}
           </Alert>
         ) : null}
       </CardContent>

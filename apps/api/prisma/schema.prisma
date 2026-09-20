@@ -73,7 +73,7 @@ model SmtpConfiguration {
 model Email {
   id                  String              @id @default(uuid())
   userId              String
-  smtpConfigurationId String
+  smtpConfigurationId String?
   messageId           String              @unique
   trackingId          String              @unique
   subject             String
@@ -87,7 +87,7 @@ model Email {
   sentAt              DateTime?
   createdAt           DateTime            @default(now())
   user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  smtpConfiguration   SmtpConfiguration   @relation(fields: [smtpConfigurationId], references: [id])
+  smtpConfiguration   SmtpConfiguration?  @relation(fields: [smtpConfigurationId], references: [id], onDelete: SetNull)
   recipients          EmailRecipient[]
   attachments         Attachment[]
   trackingEvents      TrackingEvent[]

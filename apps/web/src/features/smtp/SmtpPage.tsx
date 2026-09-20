@@ -27,8 +27,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 import { cn } from "@/lib/utils";
 
 const formSchema = smtpConfigurationSchema;
@@ -39,6 +42,7 @@ export function SmtpPage() {
   const create = useCreateSmtpConfiguration();
   const test = useTestSmtpConnection();
   const remove = useDeleteSmtpConfiguration();
+  const { confirm, modal } = useConfirmDialog();
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const form = useForm<FormValues>({
@@ -88,7 +92,7 @@ export function SmtpPage() {
       <PageHeader
         eyebrow="PROVIDERS"
         title="SMTP configuration"
-        description="Connect Gmail, Yahoo, Microsoft 365, or a custom SMTP server. Passwords are encrypted at rest and never returned to the browser. Gmail/Yahoo/Microsoft fill host and port for you."
+        description="This connection belongs only to the Postbird user you are signed in as. Add your own Gmail app password — if you reuse someone else’s SMTP, their mailbox gets the sent mail."
       />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -163,8 +167,7 @@ export function SmtpPage() {
               </div>
               <div className="space-y-2">
                 <Label>Password / app password</Label>
-                <Input
-                  type="password"
+                <PasswordInput
                   autoComplete="new-password"
                   {...form.register("password")}
                 />
@@ -181,7 +184,8 @@ export function SmtpPage() {
           <CardHeader>
             <CardTitle>Saved connections</CardTitle>
             <CardDescription>
-              Test or disable providers without exposing secrets.
+              Test a connection or remove it from this account. Sent mail stays in
+              history after a connection is deleted.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -229,14 +233,28 @@ export function SmtpPage() {
                       size="sm"
                       className="text-destructive"
                       type="button"
+                      disabled={remove.isPending}
                       onClick={() => {
-                        if (
-                          window.confirm(
-                            `Remove ${item.label}? Configurations used by sent mail are disabled instead of deleted.`,
-                          )
-                        ) {
-                          remove.mutate(item.id);
-                        }
+                        void (async () => {
+                          const confirmed = await confirm({
+                            title: "Remove SMTP connection",
+                            description: `Remove ${item.label} (${item.username})? You will need to add it again before sending. Existing sent mail stays in history.`,
+                            confirmLabel: "Remove connection",
+                          });
+                          if (!confirmed) return;
+                          setError("");
+                          setNotice("");
+                          try {
+                            await remove.mutateAsync(item.id);
+                            setNotice(`${item.label} was removed.`);
+                          } catch (removeError) {
+                            setError(
+                              removeError instanceof Error
+                                ? removeError.message
+                                : "Unable to remove this SMTP connection",
+                            );
+                          }
+                        })();
                       }}
                     >
                       <Trash2 size={14} /> Remove
@@ -252,6 +270,7 @@ export function SmtpPage() {
           </CardContent>
         </Card>
       </div>
+      <ConfirmModal {...modal} />
     </div>
   );
 }

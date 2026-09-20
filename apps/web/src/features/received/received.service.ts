@@ -16,4 +16,8 @@ export const receivedService = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  remove: (id: string) =>
+    apiClient<{ deleted: boolean; id: string }>(API_PATHS.received.byId(id), {
+      method: "DELETE",
+    }),
 };

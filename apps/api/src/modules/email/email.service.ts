@@ -190,3 +190,17 @@ export async function sendEmail(userId: string, payload: SendEmailInput) {
   });
   return { id: saved.id, status: saved.status, trackingId };
 }
+
+export async function deleteEmail(userId: string, id: string) {
+  const email = await prisma.email.findFirst({
+    where: { id, userId },
+    select: { id: true, status: true },
+  });
+  if (!email) throw new NotFoundError("Email");
+  await prisma.attachment.updateMany({
+    where: { emailId: email.id, userId },
+    data: { emailId: null },
+  });
+  await prisma.email.delete({ where: { id: email.id } });
+  return { deleted: true, id: email.id, status: email.status };
+}

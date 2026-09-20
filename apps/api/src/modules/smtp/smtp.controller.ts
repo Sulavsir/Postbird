@@ -59,9 +59,7 @@ export const deleteSmtp: RequestHandler = async (request, response, next) => {
     response.json({
       success: true,
       data,
-      message: data.deleted
-        ? "SMTP configuration deleted"
-        : "Configuration is in use and was disabled instead",
+      message: "SMTP configuration deleted",
     });
   } catch (error) {
     next(error);

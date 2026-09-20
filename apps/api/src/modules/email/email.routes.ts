@@ -3,6 +3,7 @@ import { sendEmailSchema } from "@postbird/shared";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import { validate } from "../../middlewares/validation.middleware.js";
 import {
+  deleteEmailHandler,
   getEmailHandler,
   listEmailsHandler,
   sendEmailHandler,
@@ -11,5 +12,6 @@ import {
 export const emailRouter = Router();
 emailRouter.use(authenticate);
 emailRouter.get("/", listEmailsHandler);
-emailRouter.get("/:id", getEmailHandler);
 emailRouter.post("/send", validate(sendEmailSchema), sendEmailHandler);
+emailRouter.get("/:id", getEmailHandler);
+emailRouter.delete("/:id", deleteEmailHandler);

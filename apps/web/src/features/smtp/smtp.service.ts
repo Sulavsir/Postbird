@@ -31,7 +31,7 @@ export const smtpService = {
       body: JSON.stringify(input),
     }),
   remove: (id: string) =>
-    apiClient<{ deleted: boolean; disabled: boolean }>(API_PATHS.smtp.byId(id), {
+    apiClient<{ deleted: boolean; id: string }>(API_PATHS.smtp.byId(id), {
       method: "DELETE",
     }),
   test: (id: string) =>

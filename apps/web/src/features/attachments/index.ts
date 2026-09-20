@@ -6,4 +6,3 @@ export {
   useDeleteAttachment,
   useUploadAttachment,
 } from "./use-attachments";
-export { AttachmentsPage } from "./AttachmentsPage";

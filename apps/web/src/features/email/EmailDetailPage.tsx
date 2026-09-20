@@ -1,15 +1,21 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { attachmentService } from "../attachments";
+import { APP_ROUTES } from "../../constants";
 import { formatBytes, formatDate } from "../../lib/format";
-import { useEmail } from "./use-emails";
+import { useDeleteEmail, useEmail } from "./use-emails";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 export function EmailDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const email = useEmail(id);
+  const remove = useDeleteEmail();
+  const { confirm, modal } = useConfirmDialog();
   if (email.isLoading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
@@ -33,6 +39,29 @@ export function EmailDetailPage() {
         eyebrow="MESSAGE"
         title={item.subject}
         description={`${item.status} · ${item.smtpConfiguration?.label} · ${item.openCount} recorded opens · ${clicks} recorded clicks`}
+        action={
+          <Button
+            variant="ghost"
+            className="text-destructive"
+            type="button"
+            disabled={remove.isPending}
+            onClick={() => {
+              void (async () => {
+                const confirmed = await confirm({
+                  title: "Delete email",
+                  description: `Delete “${item.subject}”? This removes it from Postbird history only.`,
+                  confirmLabel: "Delete email",
+                });
+                if (!confirmed) return;
+                remove.mutate(item.id, {
+                  onSuccess: () => navigate(APP_ROUTES.history),
+                });
+              })();
+            }}
+          >
+            Delete
+          </Button>
+        }
       />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -96,6 +125,7 @@ export function EmailDetailPage() {
           </CardContent>
         </Card>
       </div>
+      <ConfirmModal {...modal} />
     </div>
   );
 }

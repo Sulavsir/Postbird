@@ -66,4 +66,9 @@ export const emailService = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  remove: (id: string) =>
+    apiClient<{ deleted: boolean; id: string; status: string }>(
+      API_PATHS.emails.byId(id),
+      { method: "DELETE" },
+    ),
 };

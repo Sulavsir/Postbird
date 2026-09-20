@@ -1,38 +1,33 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  SMTP_PROVIDER_PRESETS,
-  imapSyncSchema,
-  type SmtpProvider,
-} from "@postbird/shared";
+import { imapSyncSchema } from "@postbird/shared";
 import { formatDate, initials } from "../../lib/format";
-import { useReceivedEmails, useSyncInbox } from "./use-received";
-import { useSmtpConfigurations } from "../smtp";
+import { useReceivedEmails, useSyncInbox, useDeleteReceivedEmail } from "./use-received";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 type SyncValues = z.infer<typeof imapSyncSchema>;
 
 export function InboxPage() {
   const received = useReceivedEmails();
-  const smtp = useSmtpConfigurations();
   const sync = useSyncInbox();
-  const first = smtp.data?.[0];
-  const preset = first
-    ? SMTP_PROVIDER_PRESETS[first.provider as SmtpProvider]
-    : SMTP_PROVIDER_PRESETS.CUSTOM;
+  const remove = useDeleteReceivedEmail();
+  const { confirm, modal } = useConfirmDialog();
   const form = useForm<SyncValues>({
     resolver: zodResolver(imapSyncSchema),
     defaultValues: {
-      host: preset.imapHost || first?.host || "",
-      port: preset.imapPort,
+      host: "",
+      port: 993,
       secure: true,
-      username: first?.username ?? "",
+      username: "",
       password: "",
     },
   });
@@ -75,7 +70,7 @@ export function InboxPage() {
               </div>
               <div className="space-y-2">
                 <Label>Password</Label>
-                <Input type="password" {...form.register("password")} />
+                <PasswordInput {...form.register("password")} />
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" {...form.register("secure")} /> Use TLS
@@ -123,6 +118,26 @@ export function InboxPage() {
                   <span className="text-xs text-muted-foreground">
                     {formatDate(item.receivedAt)}
                   </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    type="button"
+                    disabled={remove.isPending}
+                    onClick={() => {
+                      void (async () => {
+                        const confirmed = await confirm({
+                          title: "Delete received message",
+                          description:
+                            "Delete this message from Postbird? It stays in the mailbox on the mail server.",
+                          confirmLabel: "Delete message",
+                        });
+                        if (confirmed) remove.mutate(item.id);
+                      })();
+                    }}
+                  >
+                    Delete
+                  </Button>
                 </div>
               ))
             ) : (
@@ -133,6 +148,7 @@ export function InboxPage() {
           </CardContent>
         </Card>
       </div>
+      <ConfirmModal {...modal} />
     </div>
   );
 }

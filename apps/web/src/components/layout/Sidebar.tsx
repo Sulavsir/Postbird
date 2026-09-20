@@ -6,6 +6,7 @@ import {
   Send,
   Settings2,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { APP_ROUTES } from "../../constants";
@@ -13,10 +14,12 @@ import { cn } from "@/lib/utils";
 
 export function Sidebar({
   name,
+  email,
   open = false,
   onNavigate,
 }: {
   name: string;
+  email?: string;
   open?: boolean;
   onNavigate?: () => void;
 }) {
@@ -33,6 +36,7 @@ export function Sidebar({
     { to: APP_ROUTES.inbox, label: "Inbox", icon: Inbox },
     { to: APP_ROUTES.smtp, label: "SMTP settings", icon: Settings2 },
     { to: APP_ROUTES.attachments, label: "Attachments", icon: Paperclip },
+    { to: APP_ROUTES.account, label: "Account", icon: UserRound },
   ];
   return (
     <aside
@@ -51,8 +55,10 @@ export function Sidebar({
         <span className="grid size-6 place-items-center rounded-md bg-orange-300 text-[11px] font-bold text-white">
           {initials[0] ?? "U"}
         </span>
-        <span className="min-w-0">
-          <small className="block text-[10px] text-muted-foreground">Workspace</small>
+          <span className="min-w-0">
+          <small className="block text-[10px] text-muted-foreground">
+            {email || "Your workspace"}
+          </small>
           <strong className="block truncate text-xs">{name}</strong>
         </span>
       </div>
@@ -111,7 +117,9 @@ export function Sidebar({
           </span>
           <span>
             <strong className="block text-xs">{name}</strong>
-            <small className="text-[10px] text-muted-foreground">Account owner</small>
+            <small className="text-[10px] text-muted-foreground">
+              {email || "Signed in"}
+            </small>
           </span>
         </div>
       </div>

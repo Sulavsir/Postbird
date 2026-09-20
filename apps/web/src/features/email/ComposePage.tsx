@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,7 +41,6 @@ export function ComposePage() {
   const [files, setFiles] = useState<AttachmentSummary[]>([]);
   const [error, setError] = useState("");
   const enabled = smtp.data?.filter((item) => item.isEnabled) ?? [];
-  const defaultSmtpId = enabled[0]?.id ?? "";
   const form = useForm<ComposeValues>({
     resolver: zodResolver(composeSchema),
     defaultValues: {
@@ -55,12 +54,6 @@ export function ComposePage() {
       trackClicks: true,
     },
   });
-
-  useEffect(() => {
-    if (defaultSmtpId && !form.getValues("smtpConfigurationId")) {
-      form.setValue("smtpConfigurationId", defaultSmtpId);
-    }
-  }, [defaultSmtpId, form]);
 
   async function onSubmit(values: ComposeValues) {
     setError("");
@@ -119,6 +112,7 @@ export function ComposePage() {
               <div className="space-y-2">
                 <Label>From (saved SMTP account)</Label>
                 <NativeSelect {...form.register("smtpConfigurationId")}>
+                  <option value="">Select an SMTP account</option>
                   {enabled.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.label} &lt;{item.username}&gt;

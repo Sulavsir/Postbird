@@ -103,18 +103,12 @@ export async function deleteConfiguration(userId: string, id: string) {
     where: { id, userId },
   });
   if (!existing) throw new NotFoundError("SMTP configuration");
-  const inUse = await prisma.email.count({
-    where: { smtpConfigurationId: existing.id },
+  await prisma.email.updateMany({
+    where: { smtpConfigurationId: existing.id, userId },
+    data: { smtpConfigurationId: null },
   });
-  if (inUse > 0) {
-    await prisma.smtpConfiguration.update({
-      where: { id: existing.id },
-      data: { isEnabled: false },
-    });
-    return { deleted: false, disabled: true };
-  }
   await prisma.smtpConfiguration.delete({ where: { id: existing.id } });
-  return { deleted: true, disabled: false };
+  return { deleted: true, id: existing.id };
 }
 
 export async function testConfiguration(userId: string, id: string) {

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { APP_ROUTES } from "../../constants";
-import { useAuth } from "../../features/auth";
+import { useAuth } from "../../features/auth/auth-context";
 import { useDashboard } from "../../features/dashboard";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "./Sidebar";
@@ -11,21 +11,25 @@ const titles: Record<string, string> = {
   [APP_ROUTES.overview]: "Overview",
   [APP_ROUTES.compose]: "Compose",
   [APP_ROUTES.smtp]: "SMTP settings",
+  [APP_ROUTES.account]: "Account",
   [APP_ROUTES.history]: "Sent history",
   [APP_ROUTES.inbox]: "Inbox",
   [APP_ROUTES.attachments]: "Attachments",
 };
 
 export function AppShell() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const dashboard = useDashboard();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const name =
+    user?.displayName ||
     dashboard.data?.user?.displayName ||
+    user?.email ||
     dashboard.data?.user?.email ||
     "Workspace";
+  const email = user?.email || dashboard.data?.user?.email || "";
   const title =
     titles[location.pathname] ??
     (location.pathname.startsWith("/history/") ? "Message" : "Workspace");
@@ -42,6 +46,7 @@ export function AppShell() {
       ) : null}
       <Sidebar
         name={name}
+        email={email}
         open={menuOpen}
         onNavigate={() => setMenuOpen(false)}
       />
@@ -71,9 +76,17 @@ export function AppShell() {
               variant="ghost"
               size="sm"
               type="button"
+              onClick={() => navigate(APP_ROUTES.account)}
+            >
+              Account
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
               onClick={() => {
                 logout();
-                navigate(APP_ROUTES.login);
+                navigate(APP_ROUTES.register);
               }}
             >
               Sign out

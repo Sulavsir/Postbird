@@ -8,4 +8,3 @@ export {
   useTestSmtpConnection,
   useUpdateSmtpConfiguration,
 } from "./use-smtp-configurations";
-export { SmtpPage } from "./SmtpPage";

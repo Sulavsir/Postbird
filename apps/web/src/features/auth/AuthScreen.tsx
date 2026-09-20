@@ -11,6 +11,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 const loginSchema = credentialsSchema;
@@ -34,26 +35,32 @@ export function AuthScreen({ mode }: { mode: "login" | "register" }) {
   }
 
   async function submit(values: LoginValues & Partial<RegisterValues>) {
-    if (mode === "login") {
-      await login.mutateAsync({
+    try {
+      if (mode === "login") {
+        await login.mutateAsync({
+          email: values.email,
+          password: values.password,
+        });
+        return;
+      }
+      await register.mutateAsync({
         email: values.email,
         password: values.password,
+        displayName: values.displayName ?? "",
       });
-      return;
+    } catch {
+      /* mutation error is shown below */
     }
-    await register.mutateAsync({
-      email: values.email,
-      password: values.password,
-      displayName: values.displayName ?? "",
-    });
   }
 
-  const error =
-    login.error?.message ||
-    register.error?.message ||
+  const fieldError =
+    form.formState.errors.displayName?.message ||
     form.formState.errors.email?.message ||
-    form.formState.errors.password?.message ||
-    form.formState.errors.displayName?.message;
+    form.formState.errors.password?.message;
+  const requestError =
+    (login.error instanceof Error ? login.error.message : undefined) ||
+    (register.error instanceof Error ? register.error.message : undefined);
+  const error = fieldError || requestError;
 
   return (
     <main className="grid min-h-screen place-items-center bg-linear-to-br from-background to-secondary p-6">
@@ -73,8 +80,8 @@ export function AuthScreen({ mode }: { mode: "login" | "register" }) {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "login"
-              ? "Sign in to manage delivery, SMTP, and tracking."
-              : "Create an account, then connect Gmail, Yahoo, Microsoft, or custom SMTP."}
+              ? "Sign in to your own workspace. Do not share one login on the live site — everyone using the same email sees the same mail."
+              : "Create your own account. A new signup starts empty: your SMTP, sent mail, and files are not mixed with other users on this deploy."}
           </p>
           <form
             className="mt-6 space-y-4"
@@ -92,10 +99,10 @@ export function AuthScreen({ mode }: { mode: "login" | "register" }) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 minLength={8}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
                 {...form.register("password")}
                 required
               />
