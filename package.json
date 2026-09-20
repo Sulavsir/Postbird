@@ -10,7 +10,7 @@
     "dev": "vite --config apps/web/vite.config.ts",
     "dev:web": "vite --config apps/web/vite.config.ts",
     "dev:api": "tsx --tsconfig apps/api/tsconfig.json apps/api/src/server.ts",
-    "build": "npm run build:web && npm run build:api && npm run build:shared",
+    "build": "npm run build:web",
     "build:web": "tsc -p apps/web/tsconfig.json && vite build --config apps/web/vite.config.ts",
     "build:api": "tsc -p apps/api/tsconfig.json",
     "build:shared": "tsc -p packages/shared/tsconfig.json",
