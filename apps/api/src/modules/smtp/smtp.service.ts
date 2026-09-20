@@ -5,7 +5,7 @@ import {
   type SmtpUpdateInput,
 } from "@postbird/shared";
 import { prisma } from "../../lib/prisma.js";
-import { decrypt, encrypt } from "../../utils/encryption.js";
+import { decryptSmtpSecret, encrypt } from "../../utils/encryption.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
 import { toSmtpError } from "../../utils/smtp-error.js";
 import { verifyTransport } from "../../integrations/smtp/index.js";
@@ -127,7 +127,7 @@ export async function testConfiguration(userId: string, id: string) {
         username: record.username,
         isEnabled: record.isEnabled,
       },
-      decrypt(record.encryptedSecret),
+      decryptSmtpSecret(record.encryptedSecret),
     );
   } catch (error) {
     throw toSmtpError(error);

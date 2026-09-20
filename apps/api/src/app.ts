@@ -13,25 +13,47 @@ import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { apiRateLimit } from "./middlewares/rate-limit.middleware.js";
 
 export const app = express();
+app.set("trust proxy", 1);
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
   }),
 );
-const allowedOrigins = new Set([
-  env.FRONTEND_URL,
-  "https://postbird-blush.vercel.app",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-]);
+
+function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  const extra = new Set([
+    env.FRONTEND_URL,
+    "https://postbird-blush.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+  ]);
+  if (extra.has(origin)) return true;
+  try {
+    const incoming = new URL(origin);
+    const frontend = new URL(env.FRONTEND_URL);
+    if (incoming.origin === frontend.origin) return true;
+    if (
+      frontend.hostname.endsWith(".vercel.app") &&
+      incoming.protocol === "https:" &&
+      incoming.hostname.endsWith(".vercel.app")
+    ) {
+      const project = frontend.hostname.replace(/\.vercel\.app$/, "");
+      return (
+        incoming.hostname === `${project}.vercel.app` ||
+        incoming.hostname.startsWith(`${project}-`)
+      );
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.has(origin)) {
-        callback(null, true);
-        return;
-      }
-      callback(null, false);
+      callback(null, isAllowedOrigin(origin));
     },
     credentials: true,
   }),

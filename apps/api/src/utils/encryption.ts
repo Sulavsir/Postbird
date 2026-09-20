@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { env } from "../config/env.js";
+import { AppError } from "./errors.js";
 
 const algorithm = "aes-256-gcm";
 const key = crypto.createHash("sha256").update(env.ENCRYPTION_KEY).digest();
@@ -32,4 +33,16 @@ export function decrypt(payload: string): string {
     decipher.update(Buffer.from(encryptedValue, "base64url")),
     decipher.final(),
   ]).toString("utf8");
+}
+
+export function decryptSmtpSecret(payload: string): string {
+  try {
+    return decrypt(payload);
+  } catch {
+    throw new AppError(
+      "SMTP_SECRET_INVALID",
+      "The saved SMTP password could not be decrypted. ENCRYPTION_KEY on this server must match the key used when you saved the connection. Remove the connection and add it again.",
+      422,
+    );
+  }
 }

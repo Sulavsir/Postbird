@@ -3,7 +3,7 @@ import path from "node:path";
 import type { SendEmailInput } from "@postbird/shared";
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
-import { decrypt } from "../../utils/encryption.js";
+import { decryptSmtpSecret } from "../../utils/encryption.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
 import { toSmtpError } from "../../utils/smtp-error.js";
 import { createTransport } from "../../integrations/smtp/index.js";
@@ -153,7 +153,7 @@ export async function sendEmail(userId: string, payload: SendEmailInput) {
       username: config.username,
       isEnabled: config.isEnabled,
     },
-    decrypt(config.encryptedSecret),
+    decryptSmtpSecret(config.encryptedSecret),
   );
   const trackedBody = payload.trackClicks
     ? rewriteTrackedLinks(payload.body, trackingId)
