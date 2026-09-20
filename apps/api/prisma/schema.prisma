@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SmtpProvider {
+  GMAIL
+  YAHOO
+  MICROSOFT
+  CUSTOM
+}
+
+enum SmtpSecurity {
+  TLS
+  STARTTLS
+  NONE
+}
+
+enum EmailStatus {
+  DRAFT
+  QUEUED
+  SENT
+  FAILED
+}
+
+enum RecipientType {
+  TO
+  CC
+  BCC
+}
+
+enum TrackingEventType {
+  OPEN
+  CLICK
+}
+
+model User {
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  passwordHash        String
+  displayName         String
+  smtpConfigurations  SmtpConfiguration[]
+  emails              Email[]
+  attachments         Attachment[]
+  receivedEmails      ReceivedEmail[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model SmtpConfiguration {
+  id             String       @id @default(uuid())
+  userId         String
+  provider       SmtpProvider
+  label          String
+  host           String
+  port           Int
+  security       SmtpSecurity
+  username       String
+  encryptedSecret String
+  isEnabled      Boolean      @default(true)
+  lastVerifiedAt DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emails         Email[]
+  @@index([userId, isEnabled])
+}
+
+model Email {
+  id                  String              @id @default(uuid())
+  userId              String
+  smtpConfigurationId String
+  messageId           String              @unique
+  trackingId          String              @unique
+  subject             String
+  body                String
+  status              EmailStatus         @default(QUEUED)
+  trackOpens          Boolean             @default(true)
+  trackClicks         Boolean             @default(true)
+  openCount           Int                 @default(0)
+  firstOpenedAt       DateTime?
+  lastOpenedAt        DateTime?
+  sentAt              DateTime?
+  createdAt           DateTime            @default(now())
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  smtpConfiguration   SmtpConfiguration   @relation(fields: [smtpConfigurationId], references: [id])
+  recipients          EmailRecipient[]
+  attachments         Attachment[]
+  trackingEvents      TrackingEvent[]
+  @@index([userId, status, createdAt])
+  @@index([trackingId])
+}
+
+model EmailRecipient {
+  id        String        @id @default(uuid())
+  emailId   String
+  address   String
+  type      RecipientType
+  email     Email         @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  @@index([emailId, address])
+}
+
+model Attachment {
+  id           String   @id @default(uuid())
+  userId       String
+  emailId      String?
+  originalName String
+  storageName  String
+  mimeType     String
+  sizeBytes    Int
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email        Email?   @relation(fields: [emailId], references: [id], onDelete: SetNull)
+  @@index([userId, createdAt])
+}
+
+model TrackingEvent {
+  id          String            @id @default(uuid())
+  emailId     String
+  type        TrackingEventType
+  url         String?
+  userAgent   String?
+  ipHash      String?
+  createdAt   DateTime          @default(now())
+  email       Email             @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  @@index([emailId, type, createdAt])
+}
+
+model ReceivedEmail {
+  id         String   @id @default(uuid())
+  userId     String
+  uid        String
+  messageId  String?
+  from       String?
+  subject    String?
+  text       String?
+  receivedAt DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, uid])
+  @@index([userId, receivedAt])
+}

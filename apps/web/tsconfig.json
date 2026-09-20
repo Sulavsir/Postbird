@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.app.json",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@postbird/shared": ["../../packages/shared/src/index.ts"]
+    }
+  },
+  "include": ["./src", "../../packages/shared/src"]
+}

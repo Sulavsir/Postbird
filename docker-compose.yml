@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postbird
+    ports:
+      - "5432:5432"
+    volumes:
+      - postbird-data:/var/lib/postgresql/data
+volumes:
+  postbird-data:
