@@ -1,13 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../auth/auth-context";
 import { DASHBOARD_QUERY_KEY } from "../dashboard/use-dashboard";
 import { attachmentService } from "./attachment.service";
 
 export const ATTACHMENTS_QUERY_KEY = ["attachments"] as const;
 
 export function useAttachments() {
+  const { token, user } = useAuth();
   return useQuery({
-    queryKey: ATTACHMENTS_QUERY_KEY,
+    queryKey: [...ATTACHMENTS_QUERY_KEY, user?.id ?? "anon"],
     queryFn: attachmentService.list,
+    enabled: Boolean(token),
   });
 }
 

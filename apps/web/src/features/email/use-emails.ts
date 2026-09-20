@@ -1,22 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SendEmailInput } from "@postbird/shared";
+import { useAuth } from "../auth/auth-context";
 import { DASHBOARD_QUERY_KEY } from "../dashboard/use-dashboard";
 import { emailService } from "./email.service";
 
 export const EMAILS_QUERY_KEY = ["emails"] as const;
 
 export function useEmails(page = 1) {
+  const { token, user } = useAuth();
   return useQuery({
-    queryKey: [...EMAILS_QUERY_KEY, page],
+    queryKey: [...EMAILS_QUERY_KEY, user?.id ?? "anon", page],
     queryFn: () => emailService.list(page),
+    enabled: Boolean(token),
   });
 }
 
 export function useEmail(id: string | undefined) {
+  const { token, user } = useAuth();
   return useQuery({
-    queryKey: [...EMAILS_QUERY_KEY, "detail", id],
+    queryKey: [...EMAILS_QUERY_KEY, "detail", user?.id ?? "anon", id],
     queryFn: () => emailService.get(id!),
-    enabled: Boolean(id),
+    enabled: Boolean(token && id),
   });
 }
 

@@ -40,7 +40,10 @@ export function ComposePage() {
   const library = useAttachments();
   const [files, setFiles] = useState<AttachmentSummary[]>([]);
   const [error, setError] = useState("");
-  const enabled = smtp.data?.filter((item) => item.isEnabled) ?? [];
+  const enabled =
+    smtp.isSuccess && smtp.data
+      ? smtp.data.filter((item) => item.isEnabled)
+      : [];
   const form = useForm<ComposeValues>({
     resolver: zodResolver(composeSchema),
     defaultValues: {
@@ -100,8 +103,9 @@ export function ComposePage() {
       <Card>
         <CardContent className="space-y-4 p-6">
           {!enabled.length ? (
-            <Alert variant="destructive">
-              Add and enable an SMTP configuration before sending.
+            <Alert>
+              This account has no SMTP connection yet. Add yours under SMTP
+              settings, then come back to send.
             </Alert>
           ) : null}
           <form
@@ -111,8 +115,15 @@ export function ComposePage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>From (saved SMTP account)</Label>
-                <NativeSelect {...form.register("smtpConfigurationId")}>
-                  <option value="">Select an SMTP account</option>
+                <NativeSelect
+                  disabled={!enabled.length}
+                  {...form.register("smtpConfigurationId")}
+                >
+                  <option value="">
+                    {enabled.length
+                      ? "Select an SMTP account"
+                      : "No SMTP configured"}
+                  </option>
                   {enabled.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.label} &lt;{item.username}&gt;

@@ -141,9 +141,14 @@ export function ComposePanel({
             <Label>From</Label>
             <NativeSelect
               value={configurationId}
+              disabled={!enabled.length}
               onChange={(event) => setConfigurationId(event.target.value)}
             >
-              <option value="">Select an SMTP account</option>
+              <option value="">
+                {enabled.length
+                  ? "Select an SMTP account"
+                  : "No SMTP configured"}
+              </option>
               {enabled.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.label} &lt;{item.username}&gt;
@@ -206,7 +211,7 @@ export function SmtpPanel({
         icon={<Settings2 size={16} />}
         iconClass="bg-sky-50 text-sky-600"
         title="SMTP connection"
-        description="Connected providers from your account."
+        description="SMTP you added for this account. A new signup starts with none."
         action={
           <Button variant="link" className="px-0" asChild>
             <Link to={APP_ROUTES.smtp}>
@@ -242,7 +247,11 @@ export function SmtpPanel({
           ))
         ) : (
           <p className="text-sm text-muted-foreground">
-            No SMTP configurations yet.
+            No SMTP on this account yet.{" "}
+            <Link className="underline" to={APP_ROUTES.smtp}>
+              Add a connection
+            </Link>
+            .
           </p>
         )}
       </CardContent>

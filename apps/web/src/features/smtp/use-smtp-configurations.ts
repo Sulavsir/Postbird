@@ -3,6 +3,7 @@ import type {
   SmtpConfigurationInput,
   SmtpUpdateInput,
 } from "@postbird/shared";
+import { useAuth } from "../auth/auth-context";
 import { DASHBOARD_QUERY_KEY } from "../dashboard/use-dashboard";
 import { smtpService } from "./smtp.service";
 
@@ -14,7 +15,12 @@ function invalidateSmtp(queryClient: ReturnType<typeof useQueryClient>) {
 }
 
 export function useSmtpConfigurations() {
-  return useQuery({ queryKey: SMTP_QUERY_KEY, queryFn: smtpService.list });
+  const { token, user } = useAuth();
+  return useQuery({
+    queryKey: [...SMTP_QUERY_KEY, user?.id ?? "anon"],
+    queryFn: smtpService.list,
+    enabled: Boolean(token),
+  });
 }
 
 export function useCreateSmtpConfiguration() {

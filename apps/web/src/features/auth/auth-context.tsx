@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   useContext,
@@ -29,10 +30,16 @@ function readStoredUser(): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [token, setToken] = useState<string | null>(() =>
     window.localStorage.getItem(AUTH_TOKEN_KEY),
   );
   const [user, setUser] = useState<AuthUser | null>(readStoredUser);
+
+  function resetQueries() {
+    void queryClient.cancelQueries();
+    queryClient.clear();
+  }
 
   useEffect(() => {
     if (!token) return;
@@ -54,17 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession: (session) => {
         window.localStorage.setItem(AUTH_TOKEN_KEY, session.token);
         window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.user));
+        resetQueries();
         setToken(session.token);
         setUser(session.user);
       },
       logout: () => {
         window.localStorage.removeItem(AUTH_TOKEN_KEY);
         window.localStorage.removeItem(AUTH_USER_KEY);
+        resetQueries();
         setToken(null);
         setUser(null);
       },
     }),
-    [token, user],
+    [token, user, queryClient],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
