@@ -13,6 +13,7 @@
     "build": "npm run build:web && npm run build:api",
     "build:web": "tsc -p apps/web/tsconfig.json && vite build --config apps/web/vite.config.ts",
     "build:api": "tsc -p apps/api/tsconfig.json",
+    "build:shared": "tsc -p packages/shared/tsconfig.json",
     "db:generate": "prisma generate --schema apps/api/prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema apps/api/prisma/schema.prisma",
     "db:seed": "tsx apps/api/prisma/seed.ts",
