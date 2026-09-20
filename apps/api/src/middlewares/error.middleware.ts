@@ -4,18 +4,37 @@ import { AppError } from "../utils/errors.js";
 
 export const errorMiddleware: ErrorRequestHandler = (
   error,
-  _request,
+  request,
   response,
   _next,
 ) => {
+  console.error("========== API ERROR ==========");
+  console.error("Method:", request.method);
+  console.error("URL:", request.originalUrl);
+  console.error("Error:", error);
+
+  if (error instanceof Error) {
+    console.error("Message:", error.message);
+    console.error("Stack:", error.stack);
+  }
+
+  console.error("================================");
+
   if (error instanceof AppError) {
     response.status(error.statusCode).json({
       success: false,
-      error: { code: error.code, message: error.message },
+      error: {
+        code: error.code,
+        message: error.message,
+      },
     });
     return;
   }
-  if (error instanceof Error && error.message.startsWith("FILE_TYPE_NOT_ALLOWED")) {
+
+  if (
+    error instanceof Error &&
+    error.message.startsWith("FILE_TYPE_NOT_ALLOWED")
+  ) {
     response.status(422).json({
       success: false,
       error: {
@@ -25,6 +44,7 @@ export const errorMiddleware: ErrorRequestHandler = (
     });
     return;
   }
+
   if (error instanceof MulterError) {
     response.status(422).json({
       success: false,
@@ -38,14 +58,12 @@ export const errorMiddleware: ErrorRequestHandler = (
     });
     return;
   }
-  console.error(
-    error instanceof Error ? error.message : "Unexpected server error",
-  );
+
   response.status(500).json({
     success: false,
     error: {
       code: "INTERNAL_ERROR",
-      message: "An unexpected error occurred",
+      message: "An unexpected server error occurred",
     },
   });
 };
